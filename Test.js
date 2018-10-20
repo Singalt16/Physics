@@ -14,7 +14,7 @@ let render2 = {
   borderWidth: 5,
   borderColor: 'red'
 };
--
+
 let bodies = [];
 for (let i = 0; i < 6; i++) {
   let x = Math.random() * innerWidth;
