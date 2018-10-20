@@ -20,7 +20,7 @@ class World {
   constructor(options) {
     const defaults = {
       label: 'world',
-      gravity: new Vector(0, 9.8),
+      gravity: new Vector(0, 0),
       force: new Vector(0, 0),
       bodies: [],
       airResistance: 0

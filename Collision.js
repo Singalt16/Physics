@@ -15,12 +15,10 @@ function detectCollision2(bodyA, bodyB) {
 
 // Temp code to test detection and mtv
 function detectCollision(bodyA, bodyB) {
-  let coll = detectCollision2(bodyA, bodyB);
-  if (!coll) return false;
-  let body = coll.body;
-  let mtv = coll.mtv;
-  if (body === 'a') bodyA.translate(mtv);
-  else if (body === 'b') bodyB.translate(mtv);
+  let mtv = detectCollision2(bodyA, bodyB);
+  if (!mtv) return false;
+  if (bodyA.isStatic) bodyB.translate(mtv.multipliedBy(-1));
+  else bodyA.translate(mtv);
   // bodyA.velocity.x = -bodyA.velocity.x;
   // bodyA.velocity.y = -bodyA.velocity.y;
   // bodyB.velocity.x = -bodyB.velocity.x;
@@ -57,7 +55,7 @@ function detectBoxBox(bbA, bbB) {
  * Detects the collision between two circles
  * @param {Circle} circleA
  * @param {Circle} circleB
- * @return {Boolean | {mtv, body}}: minimum-translation vector
+ * @return {Boolean | Vector}: minimum-translation vector
  */
 function detectCircleCircle(circleA, circleB) {
   let diff = Vector.difference(circleA.position, circleB.position);
@@ -66,7 +64,7 @@ function detectCircleCircle(circleA, circleB) {
   if (distance > radiiAdded) return false;
 
   // returns the minimum-translation vector
-  return {body: 'a', mtv: diff.unit().multipliedBy(radiiAdded - distance)};
+  return diff.unit().multipliedBy(radiiAdded - distance);
 }
 
 /**
@@ -74,7 +72,7 @@ function detectCircleCircle(circleA, circleB) {
  * One of the bodies must be a polygon object
  * @param {Body} bodyA
  * @param {Body} bodyB
- * @returns {Boolean | {mtv, body}}:
+ * @returns {Boolean | Vector}:
  * Returns false if no collision
  * Otherwise returns minimum-translation vector (smallest vector that will separate the bodies)
  * and the body to add it to
@@ -108,7 +106,8 @@ function separatingAxis(bodyA, bodyB) {
   // finds the minimum translation vector
   let mtv = new Vector(axes[smallestPenetrationIndex].x, axes[smallestPenetrationIndex].y);
   mtv.magnitude = penetrations[smallestPenetrationIndex];
-  return {mtv, body: bodies[smallestPenetrationIndex]};
+  if (bodies[smallestPenetrationIndex] === 'b') mtv *= -1;
+  return mtv;
 }
 
 /**
