@@ -3,7 +3,6 @@
  * Detects the collision between two bodies
  * @param {Body} bodyA
  * @param {Body} bodyB
- * @returns {}
  */
 function detectCollision2(bodyA, bodyB) {
 
@@ -13,12 +12,40 @@ function detectCollision2(bodyA, bodyB) {
   else if (bodyA instanceof Polygon || bodyB instanceof Polygon) return separatingAxis(bodyA, bodyB);
 }
 
+function getNewVels(bodyA, bodyB) {
+  let v1 = bodyA.velocity;
+  let v2 = bodyB.velocity;
+  let x1 = bodyA.position;
+  let x2 = bodyB.position;
+  let m1 = bodyA.mass;
+  let m2 = bodyB.mass;
+
+  let vDiff1 = Vector.difference(v1, v2);
+  let vDiff2 = vDiff1.multipliedBy(-1);
+  let xDiff1 = Vector.difference(x1, x2);
+  let xDiff2 = xDiff1.multipliedBy(-1);
+
+  let f1 = (2 * m2) / (m1 + m2);
+  let f2 = Vector.dot(vDiff1, xDiff1) / Math.pow(xDiff1.magnitude, 2);
+  let v1f = Vector.difference(v1, xDiff1.multipliedBy(f1 * f2));
+
+  let f3 = (2 * m1) / (m1 + m2);
+  let f4 = Vector.dot(vDiff2, xDiff2) / Math.pow(xDiff2.magnitude, 2);
+  let v2f = Vector.difference(v2, xDiff2.multipliedBy(f3 * f4));
+
+  return {'a': v1f, 'b': v2f};
+}
+
 // Temp code to test detection and mtv
 function detectCollision(bodyA, bodyB) {
   let mtv = detectCollision2(bodyA, bodyB);
   if (!mtv) return false;
   if (bodyA.isStatic) bodyB.translate(mtv.multipliedBy(-1));
   else bodyA.translate(mtv);
+  // TODO: fix static colls
+  let velocitiesAfter = getNewVels(bodyA, bodyB);
+  bodyA.velocity.set(velocitiesAfter['a']);
+  bodyB.velocity.set(velocitiesAfter['b']);
   // bodyA.velocity.x = -bodyA.velocity.x;
   // bodyA.velocity.y = -bodyA.velocity.y;
   // bodyB.velocity.x = -bodyB.velocity.x;
@@ -106,7 +133,7 @@ function separatingAxis(bodyA, bodyB) {
   // finds the minimum translation vector
   let mtv = new Vector(axes[smallestPenetrationIndex].x, axes[smallestPenetrationIndex].y);
   mtv.magnitude = penetrations[smallestPenetrationIndex];
-  if (bodies[smallestPenetrationIndex] === 'b') mtv *= -1;
+  if (bodies[smallestPenetrationIndex] === 'b') mtv.multiply(-1);
   return mtv;
 }
 
