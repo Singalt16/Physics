@@ -1,18 +1,28 @@
 /**
  * @function detectCollision
- * Detects the collision between two bodies
+ * Detects whether or not a collision has occurred between two bodies
  * @param {Body} bodyA
  * @param {Body} bodyB
  */
-function detectCollision2(bodyA, bodyB) {
+function detectCollision(bodyA, bodyB) {
 
-  // check bounding boxes for collision first
+  // check bounding boxes for collision first for efficiency
   if (!detectBoxBox(bodyA.boundingBox, bodyB.boundingBox)) return false;
   if (bodyA instanceof Circle && bodyB instanceof Circle) return detectCircleCircle(bodyA, bodyB);
   else if (bodyA instanceof Polygon || bodyB instanceof Polygon) return separatingAxis(bodyA, bodyB);
 }
 
-function getNewVels(bodyA, bodyB) {
+/**
+ * @function getNewVelocities
+ * Calculates the post-collision velocities of two colliding bodies
+ * @param {Body} bodyA
+ * @param {Body} bodyB
+ * @return {{a: Vector, b: Vector}}
+ * Formula for the calculation found here:
+ *   https://en.wikipedia.org/wiki/Elastic_collision
+ * Thanks to Dr. Nate Magee for helping with the solution to this problem
+ */
+function getNewVelocities(bodyA, bodyB) {
   let v1 = bodyA.velocity;
   let v2 = bodyB.velocity;
   let x1 = bodyA.position;
@@ -36,27 +46,29 @@ function getNewVels(bodyA, bodyB) {
   return {'a': v1f, 'b': v2f};
 }
 
-// Temp code to test detection and mtv
-function detectCollision(bodyA, bodyB) {
-  let mtv = detectCollision2(bodyA, bodyB);
-  if (!mtv) return false;
+/**
+ * @function resolveCollision
+ * Corrects a collision between two bodies if one has occurred
+ * @param {Body} bodyA
+ * @param {Body} bodyB
+ * TODO: add option to resolve inelastic colls
+ */
+function resolveCollision(bodyA, bodyB) {
+  let mtv = detectCollision(bodyA, bodyB);
+  if (!mtv) return;
+
+  // separates the two bodies
   if (bodyA.isStatic) bodyB.translate(mtv.multipliedBy(-1));
   else bodyA.translate(mtv);
-  // TODO: fix static colls
-  let velocitiesAfter = getNewVels(bodyA, bodyB);
-  bodyA.velocity.set(velocitiesAfter['a']);
-  bodyB.velocity.set(velocitiesAfter['b']);
-  // bodyA.velocity.x = -bodyA.velocity.x;
-  // bodyA.velocity.y = -bodyA.velocity.y;
-  // bodyB.velocity.x = -bodyB.velocity.x;
-  // bodyB.velocity.y = -bodyB.velocity.y;
 
-  // let va = new Vector(bodyA.velocity.x, bodyA.velocity.y);
-  // bodyA.velocity.x = bodyB.velocity.x * (bodyB.mass / bodyA.mass);
-  // bodyA.velocity.y = bodyB.velocity.y * (bodyB.mass / bodyA.mass);
-  // bodyB.velocity.x = va.x * (bodyA.mass / bodyB.mass);
-  // bodyB.velocity.y = va.y * (bodyA.mass / bodyB.mass);
-  return true;
+  // assigns the new velocities to the bodies
+  let velocitiesAfter = getNewVelocities(bodyA, bodyB);
+  if (!bodyA.isStatic) {
+    bodyA.velocity.set(velocitiesAfter['a']);
+  }
+  if (!bodyB.isStatic) {
+    bodyB.velocity.set(velocitiesAfter['b']);
+  }
 }
 
 /**
@@ -82,7 +94,7 @@ function detectBoxBox(bbA, bbB) {
  * Detects the collision between two circles
  * @param {Circle} circleA
  * @param {Circle} circleB
- * @return {Boolean | Vector}: minimum-translation vector
+ * @return {(Boolean | Vector)}: minimum-translation vector
  */
 function detectCircleCircle(circleA, circleB) {
   let diff = Vector.difference(circleA.position, circleB.position);
@@ -95,14 +107,15 @@ function detectCircleCircle(circleA, circleB) {
 }
 
 /**
+ * @function separatingAxis
  * Uses the separating axis theorem to detect collision between two bodies
  * One of the bodies must be a polygon object
  * @param {Body} bodyA
  * @param {Body} bodyB
- * @returns {Boolean | Vector}:
+ * @returns {(Boolean | Vector)}:
  * Returns false if no collision
- * Otherwise returns minimum-translation vector (smallest vector that will separate the bodies)
- * and the body to add it to
+ * Otherwise returns minimum-translation vector (smallest vector
+ *   that will separate the bodies)
  */
 function separatingAxis(bodyA, bodyB) {
 
@@ -118,7 +131,7 @@ function separatingAxis(bodyA, bodyB) {
 
   // if there is a 0 penetration then a separating axis exists and there is no collision
   if (penetrations.includes(0)) return false;
-  // beyond this point, a collision was already detected
+  // beyond this point a collision was detected
 
   // finds the smallest penetration
   let smallestPenetrationIndex = -1;
