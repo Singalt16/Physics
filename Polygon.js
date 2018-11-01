@@ -23,47 +23,23 @@ class Polygon extends Body {
     const centroid = Polygon.getCentroid(vertices);
     const sortedVertices = Polygon.sortVertices(vertices, centroid);
     const centerOfMass = Polygon.getCenterOfMass(sortedVertices);
-    options.position = centerOfMass;
-    super(options);
+    super(centerOfMass.x, centerOfMass.y, options);
 
-    sortedVertices.forEach(v => v.rotate(this.angle, centerOfMass));
+    sortedVertices.forEach(v => v.rotate(this.angle, this.position));
     const sides = Polygon.getSides(sortedVertices);
 
-    Object.defineProperties(this, {
-      "type": {
-        value: 'polygon'
-      },
-      "vertices": {
-        value: sortedVertices,
-        enumerable: true
-      },
-      "centroid": {
-        value: centroid,
-        enumerable: true
-      },
-      "sides": {
-        value: sides,
-        enumerable: true
-      }
-    });
-
-    Object.defineProperty(this, "rotationalInertia", {
-      value: (1 / 2) * this.mass * Math.pow(Polygon.getAvgRadius(this.vertices, this.position), 2)
-    });
-  }
-
-  /**
-   * @method update
-   * Updates the polygon's properties. Overrides Body.update()
-   */
-  update() {
-    super.update();
+    this.type = 'polygon';
+    this.vertices = sortedVertices;
+    this.centroid = centroid;
+    this.sides = sides;
+    this.rotationalInertia = (1 / 2) * this.mass * Math.pow(Polygon.getAvgRadius(this.vertices, this.position), 2)
   }
 
   /**
    * @method translate
    * Shifts the polygon's position by a given vector. Overrides Body.translate()
    * @param {Vector} translation: the vector to translate by
+   * TODO: fix user changing position directly
    */
   translate(translation) {
     this.vertices.forEach(v => v.add(translation));
@@ -75,6 +51,7 @@ class Polygon extends Body {
    * @method rotate
    * Rotates the polygon by a given angle. Overrides Body.rotate()
    * @param {number} angle
+   * TODO: fix user changing angle directly
    */
   rotate(angle) {
     this.vertices.forEach(v => v.rotate(angle, this.position));
@@ -199,16 +176,21 @@ class RegularPolygon extends Polygon {
 
   /**
    * @constructor
-   * @param {Vector} center: the starting position of the center of the polygon
+   * @param {number} x: starting x position of the polygon
+   * @param {number} y: starting y position of the polygon
    * @param {int} numSides: the number of sides of the polygon
    * @param {number} radius: the distance of each vertex from the center
    * @param {Object} options: see {Body}
    */
-  constructor(center, numSides, radius, options) {
+  constructor(x, y, numSides, radius, options) {
+    let center = new Vector(x, y);
+    let vertices = RegularPolygon.findVertices(center, numSides, radius);
+    super(vertices, options);
+  }
 
-    // finds the vertices of the polygon
+  static findVertices(center, numSides, radius) {
     let angle = 0;
-    const vertices = [];
+    let vertices = [];
     for (let i = 0; i < numSides; i++) {
       let vertex = new Vector(1, 1);
       vertex.angle = angle;
@@ -217,6 +199,6 @@ class RegularPolygon extends Polygon {
       vertex.add(center);
       vertices.push(vertex);
     }
-    super(vertices, options);
+    return vertices;
   }
 }

@@ -9,25 +9,18 @@ class Circle extends Body {
 
   /**
    * @constructor
+   * @param {number} x: starting x position of the circle
+   * @param {number} y: starting y position of the circle
+   * @param {number} radius: radius of the circle
    * @param {object} options: see {Body}
    */
-  constructor(options) {
+  constructor(x, y, radius, options) {
 
-    super(options);
+    super(x, y, options);
 
-    Object.defineProperties(this, {
-      "type": {
-        value: 'circle'
-      },
-      "radius": {
-        value: options.radius,
-        enumerable: true
-      }
-    });
-
-    Object.defineProperty(this, "rotationalInertia", {
-      value: (1 / 2) * this.mass * Math.pow(this.radius, 2)
-    });
+    this.type = 'circle';
+    this.radius = radius;
+    this.rotationalInertia = (1 / 2) * this.mass * Math.pow(this.radius, 2);
   }
 
   /**

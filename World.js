@@ -17,9 +17,10 @@ class World {
    * @constructor
    * @param {Object} options
    */
-  constructor(options) {
+  constructor(options={}) {
     const defaults = {
       label: 'world',
+      tag: 'world',
       gravity: new Vector(0, 0),
       force: new Vector(0, 0),
       bodies: [],
@@ -42,6 +43,17 @@ class World {
       value: this
     });
     this.bodies.push(body);
+  }
+
+  /**
+   * @method removeBody
+   * Removes a body from the world
+   * @param {string} tag: identifier used to find the body
+   *   Must be a unique tag to work properly.
+   */
+  removeBody(tag) {
+    let index = this.bodies.find(b => b.tag === tag);
+    if (index) this.bodies.splice(index, 1);
   }
 
   /**

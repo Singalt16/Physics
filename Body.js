@@ -6,13 +6,12 @@
  * @property {Vector} position: the position of the body's center of mass
  * @property {Vector} velocity: the velocity of the body
  * @property {Vector} acceleration: the acceleration of the body
- * @property {Vector} force: the force applied on the body
- * @property {Vector} globalForce: the force applied on the body by its world
+ * @property {Vector} forces: the force applied on the body
  * @property {number} mass: the mass of the body
  * @property {number} angle: the angle of the body relative to the positive x-axis
  * @property {number} angularVelocity: the angular velocity of the body
  * @property {number} angularAcceleration: the angular acceleration of the body
- * @property {number} torque: the torque on the body
+ * @property {number} torques: the torque on the body
  * @property {number} rotationalInertia: the moment of inertia of the body
  *  - Rotational inertia is only set in the body subclasses
  * @property {boolean} isStatic: determines whether the body is static or dynamic
@@ -32,121 +31,49 @@
  */
 class Body {
 
-  constructor(options) {
+  /**
+   * @constructor
+   * @param {number} x: starting x position of the body
+   * @param {number} y: starting y position of the body
+   * @param {Object} options: see {Body}
+   */
+  constructor(x, y, options) {
 
     const defaults = {
       tag: 'body',
-      position: new Vector(0, 0),
       angle: 0,
       velocity: new Vector(0, 0),
       angularVelocity: 0,
+      acceleration: new Vector(0, 0),
+      angularAcceleration: 0,
       mass: 1,
-      force: new Vector(0, 0),
-      torque: 0,
+      forces: [],
+      torques: [],
       isStatic: false,
       render: {}
     };
-    const settings = Object.assign({}, defaults, options);
+    const props = Object.assign({}, defaults, options);
 
-    let position = settings.position;
-    let angle = settings.angle;
-    let velocity = settings.velocity;
-    let angularVelocity = settings.angularVelocity;
-    let acceleration = new Vector(0, 0);
-    let angularAcceleration = 0;
-    let mass = (settings.isStatic) ? Infinity : settings.mass;
-    let force = settings.force;
-    let torque = settings.torque;
-    let isStatic = settings.isStatic;
+    // Private properties:
+    this.type = 'body';
+    this.world = undefined;
+    this.rotationalInertia = props.mass;
 
-    Object.defineProperties(this, {
-
-      // Public properties:
-      "tag": {
-        value: settings.tag,
-        enumerable: true,
-        writable: true
-      },
-      "render": {
-        value: settings.render,
-        writable: true
-      },
-
-      // Private properties:
-      "position": {
-        enumerable: true,
-        get: () => Object.assign({}, position),
-        set: newPos => position.set(newPos)
-      },
-      "angle": {
-        enumerable: true,
-        get: () => angle,
-        set: newAng => angle = newAng
-      },
-      "velocity": {
-        enumerable: true,
-        get: () => velocity,
-        set: newVelocity => velocity.set(newVelocity)
-      },
-      "angularVelocity": {
-        enumerable: true,
-        get: () => angularVelocity,
-        set: newAngVel => angularVelocity = newAngVel
-      },
-      "acceleration": {
-        enumerable: true,
-        get: () => acceleration,
-        set: newAcc => acceleration.set(newAcc)
-      },
-      "angularAcceleration": {
-        enumerable: true,
-        get: () => angularAcceleration,
-        set: newAngAcc => angularAcceleration = newAngAcc
-      },
-      "mass": {
-        enumerable: true,
-        get: () => mass,
-        set: newMass => {
-          if (this.rotationalInertia) this.rotationalInertia *= newMass / mass;
-          mass = newMass;
-        }
-      },
-      "force": {
-        enumerable: true,
-        get: () => force,
-        set: newForce => force.set(newForce)
-      },
-      "torque": {
-        enumerable: true,
-        get: () => torque,
-        set: newTorque => torque = newTorque
-      },
-      "isStatic": {
-        enumerable: true,
-        get: () => isStatic,
-        set: newVal => {
-          if (newVal) this.mass = Infinity;
-          isStatic = newVal;
-        }
-      },
-
-      // Constant properties (unchanged by the user):
-      "type": {
-        value: 'body',
-        configurable: true,
-        enumerable: true
-      },
-      "rotationalInertia": {
-        value: undefined,
-        configurable: true,
-        enumerable: true
-      },
-      "world": {
-        value: undefined,
-        configurable: true,
-        enumerable: true
-      },
-    });
+    // Public properties:
+    this.tag = props.tag;
+    this.render = props.render;
+    this.position = new Vector(x, y);
+    this.angle = props.angle;
+    this.velocity = props.velocity;
+    this.angularVelocity = props.angularVelocity;
+    this.acceleration = props.acceleration;
+    this.angularAcceleration = props.angularAcceleration;
+    this._totalAcceleration = new Vector(this.acceleration.x, this.acceleration.y);
+    this._totalAngularAcceleration = this.angularAcceleration;
+    this.mass = (props.isStatic) ? Infinity : props.mass;
+    this.forces = [];
+    this.torques = [];
+    this.isStatic = props.isStatic;
   }
 
   /**
@@ -179,10 +106,9 @@ class Body {
    * @param {number} timeout: (optional) the time in seconds until the force is removed
    */
   applyForce(force, timeout = 0) {
-    this.force.add(force);
+    this.forces.push(force);
     if (timeout) {
-      const self = this;
-      setTimeout(function() {self.applyForce(force.inverse);}, timeout * 1000);
+      setTimeout(() => this.forces.splice(this.forces.indexOf(force)), timeout * 1000);
     }
   }
 
@@ -194,10 +120,10 @@ class Body {
    * @param {number} timeout: (optional) the time in seconds until the torque is reset
    */
   applyTorque(force, radius, timeout = 0) {
-    this.torque += force * radius;
+    let torque = force * radius;
+    this.torques.push(force * radius);
     if (timeout) {
-      const self = this;
-      setTimeout(function() {self.applyTorque(-force, radius);}, timeout * 1000);
+      setTimeout(() => this.torques.splice(this.torques.indexOf(torque)), timeout * 1000);
     }
   }
 
@@ -227,7 +153,7 @@ class Body {
    * Updates the body's velocity
    */
   updateVelocity() {
-    this.velocity.add(this.acceleration);
+    this.velocity.add(this._totalAcceleration);
   }
 
   /**
@@ -236,10 +162,11 @@ class Body {
    */
   updateAcceleration() {
     if (this.isStatic) return;
-    this.acceleration = Vector.sum(
+    this._totalAcceleration = Vector.sum(
       this.world.gravity.multipliedBy(this.mass),
       this.world.force,
-      this.force
+      this.acceleration,
+      ...this.forces
     ).dividedBy(this.mass);
   }
 
@@ -256,7 +183,7 @@ class Body {
    * Updates the body's angular velocity
    */
   updateAngularVelocity() {
-    this.angularVelocity += this.angularAcceleration;
+    this.angularVelocity += this._totalAngularAcceleration;
   }
 
   /**
@@ -265,7 +192,8 @@ class Body {
    */
   updateAngularAcceleration() {
     if (this.isStatic) return;
-    this.angularAcceleration = this.torque / this.rotationalInertia;
+    this._totalAngularAcceleration = this.torques.reduce((a, b) => a + b, 0) / this.rotationalInertia
+      + this.angularAcceleration;
   }
 
   get boundingBox() {
