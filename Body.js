@@ -3,6 +3,8 @@
  * A single body within a world.
  *
  * Properties:
+ * @property {string} type: the type of body it is
+ * @property {string} tag: a unique tag used to identify the body
  * @property {Vector} position: the position of the body's center of mass
  * @property {Vector} velocity: the velocity of the body
  * @property {Vector} acceleration: the acceleration of the body
@@ -19,6 +21,8 @@
  * @property {Object} render: render options for the body (color, border width, etc.)
  *
  * Methods:
+ * @method translate(): translates the body by a given vector
+ * @method rotate(): rotates the body by a given scalar
  * @method applyForce(): applies force on the body
  * @method applyTorque(): applies torque on the body
  * @method update(): updates the properties of the body
@@ -40,7 +44,7 @@ class Body {
   constructor(x, y, options) {
 
     const defaults = {
-      tag: 'body',
+      tag: randomString(),
       angle: 0,
       velocity: new Vector(0, 0),
       angularVelocity: 0,
@@ -79,10 +83,10 @@ class Body {
   /**
    * @method translate
    * Translates the body by a given vector
-   * @param {Vector} translation
+   * @param {Vector} translationVector
    */
-  translate(translation) {
-    this.position = Vector.sum(this.position, translation);
+  translate(translationVector) {
+    this.position = Vector.sum(this.position, translationVector);
   }
 
   /**

@@ -313,3 +313,15 @@ class Line {
     return new Line(Vector.difference(this.pointA, origin), Vector.difference(this.pointB, origin));
   }
 }
+
+/**
+ * @function randomString
+ * Returns a random alphanumeric string of 11 * num length
+ * @param {number} num: the number of random strings of length 11 to combine
+ * @return {string}
+ */
+function randomString(num = 2) {
+  let randString = '';
+  for (let i = 0; i < num; i++) randString += Math.random().toString(36).substring(2, 15);
+  return randString;
+}
