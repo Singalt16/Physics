@@ -116,10 +116,18 @@ class Body {
     }
   }
 
+  /**
+   * @method resetForce
+   * removes all local forces from the body
+   */
   resetForce() {
     this.forces = [];
   }
 
+  /**
+   * @method resetTorque
+   * removes all torque from the body
+   */
   resetTorque() {
     this.torques = [];
   }
