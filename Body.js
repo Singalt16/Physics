@@ -116,6 +116,14 @@ class Body {
     }
   }
 
+  resetForce() {
+    this.forces = [];
+  }
+
+  resetTorque() {
+    this.torques = [];
+  }
+
   /**
    * @method applyTorque
    * Applies torque to the body
